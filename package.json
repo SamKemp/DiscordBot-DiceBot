@@ -1,0 +1,16 @@
+{
+  "name": "dicebot",
+  "version": "1.0.0",
+  "description": "A dice bot for Discord",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "SamKemp55",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^12.2.0",
+    "dotenv": "^8.2.0",
+    "rpg-dice-roller": "^4.4.0"
+  }
+}
