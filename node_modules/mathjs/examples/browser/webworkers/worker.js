@@ -1,4 +1,4 @@
-importScripts('../../../dist/math.js')
+importScripts('../../../lib/browser/math.js')
 
 // create a parser
 const parser = self.math.parser()
@@ -10,7 +10,7 @@ self.addEventListener('message', function (event) {
 
   try {
     // evaluate the expression
-    result = parser.eval(request.expr)
+    result = parser.evaluate(request.expr)
   } catch (e) {
     // return the error
     err = e
@@ -19,7 +19,7 @@ self.addEventListener('message', function (event) {
   // build a response
   const response = {
     id: request.id,
-    result: result,
+    result: self.math.format(result),
     err: err
   }
 

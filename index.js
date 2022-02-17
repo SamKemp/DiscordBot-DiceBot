@@ -1,110 +1,96 @@
-require("dotenv").config()
+const { bot_token, clientId, guildId } = require('./config.json');
 
-const Discord = require("discord.js")
-const client = new Discord.Client()
+const { Client, Collection, Intents } = require('discord.js');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
+const fs = require('fs');
 
-const { DiceRoller } = require('rpg-dice-roller');
-const roller = new DiceRoller();
+const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_VOICE_STATES] });
+client.commands = new Collection();
+client.menus = new Collection();
+client.buttons = new Collection();
 
-var prefix = "/";
-MessageTimeout = 10;
+// Scan for and register commands
+ScanCommands('commands', client.commands, true, false);
 
-// Wait for the bot to be logged in before we do anything
-client.on("ready", () => {
-  console.log(`Logged in as ${client.user.tag}!`);
-  client.user.setPresence({ activity: { name: '/help' }, status: 'online' });
-});
+// Scan for and register menus
+ScanFor('menus', client.menues);
 
-// When message is sent
-client.on("message", msg => {
-    // Ignore DM's
-    if(!msg.guild){return;}
-    // Ignore self
-    if(msg.author.id == client.user.id) return;
+// Scan for and register buttons
+ScanFor('buttons', client.buttons);
 
-    // If message is !help
-    if (msg.content === prefix + "help")
-    {
-        var Output = "";
+// Scan for and register events
+ScanEvents('events');
 
-        Output = "**__Available commands__**\n";
-        Output += "`" + prefix + "help` - Displays this help message\n";
-        //Output += "`" + prefix + "roll` - Rolls 1d100\n";
-        Output += "`" + prefix + "r {notation}` - Rolls based on the given notation\n\n";
-        Output += "**__Defined notation__**\n";
-        Output += "`$DADV` - Rolls 2d20's and keeps the highest\n";
-        Output += "`$DDIS` - Rolls 2d20's and keeps the lowest\n";
-        Output += "`$CADV` - Rolls 2d100's and keeps the lowest\n";
-        Output += "`$CDIS` - Rolls 2d100 and keeps the highest\n";
-        Output += "<https://greenimp.github.io/rpg-dice-roller/guide/notation/>\n";
+// Bot Login
+console.log(' ');
+client.login(bot_token);
 
-        msg.reply(Output);
-    }
-    else if (msg.content === prefix + "Droll")
-    {
-        msg.reply(roller.roll('1d20').output);
-    }
-    else if (msg.content === prefix + "r $DADV")
-    {
-        msg.reply(roller.roll('2d20kh1').output);
-    }
-    else if (msg.content === prefix + "r $DDIS")
-    {
-        msg.reply(roller.roll('2d20kl1').output);
-    }
-    else if (msg.content === prefix + "Croll")
-    {
-        msg.reply(roller.roll('1d100').output);
-    }
-    else if (msg.content === prefix + "r $CADV")
-    {
-        msg.reply(roller.roll('(2d10kl1)*10 + 1d10').output);
-    }
-    else if (msg.content === prefix + "r $CDIS")
-    {
-        msg.reply(roller.roll('(2d10kh1)*10 + 1d10').output);
-    }
-    else if (msg.content.startsWith(prefix + "r"))
-    {
-        //msg.reply("This feature isn't available right now");
+function ScanFor(dir, clientSet) {
+	const files = fs.readdirSync('./' + dir).filter(file => file.endsWith('.js'));
 
-        var msgCommand = prefix + "r";
-        const args = msg.content.slice(msgCommand.length).trim();
-        //const command = args.shift().toLowerCase();
+	for (const file of files) {
+		const item = require('./' + dir + '/' + file);
+		// Set a new item in the Collection
+		// With the key as the menu name and the value as the exported module
+		clientSet.set(item.data.name, item);
+	}
+}
 
-        try{
-            msg.reply(roller.roll(args).output);
-        }
-        catch (error)
-        {
-            msg.reply("Given notation `" + msg.content.slice(msgCommand.length).trim() + "` not recognized");
-        }
-    }    
+function ScanCommands(dir, clientSet, devel = true, prod = false) {
+	const commands = [];
 
-    if (msg.content === prefix + "clear")
-    {
-        console.log("Received clearing request from " + msg.author.username + " in server " + msg.guild.name);
+	const files = fs.readdirSync('./' + dir).filter(file => file.endsWith('.js'));
 
-        if(true) return;
+	for (const file of files) {
+		const item = require('./' + dir + '/' + file);
+		// Set a new item in the Collection
+		// With the key as the command name and the value as the exported module
+		clientSet.set(item.data.name, item);
+		commands.push(item.data.toJSON());
+	}
 
-        if(!msg.guild.me.hasPermission('MANAGE_MESSAGES')) return msg.reply('I do not have the `MANAGE_MESSAGES` permission');
+	const rest = new REST({ version: '9' }).setToken(bot_token);
 
-        amount = 100;
+	// Register (/) commands
+	(async () => {
+		try {
+			console.log('Started refreshing application (/) commands.');
 
-        msg.channel.messages.fetch({ limit: amount }).then(messages => 
-        {
-        var error = false;
+			// Development guild commands
+			if (devel) {
+				await rest.put(
+					Routes.applicationGuildCommands(clientId, guildId),
+					{ body: commands },
+				);
+			}
 
-        msg.channel.bulkDelete(messages).catch(error = true)
+			// Production glocal commands
+			if (prod) {
+				await rest.put(
+					Routes.applicationCommands(clientId),
+					{ body: commands },
+				);
+			}
 
-        if(error)
-        {
-            messages.forEach(element => msg.channel.messages.fetch(element.id).then(message => message.delete().catch(console.error)).catch(console.error) )
-        }
-        });
-    }
-  
-});
+			console.log('Successfully reloaded application (/) commands.');
+		}
+		catch (error) {
+			console.error(error);
+		}
+	})();
+}
 
-// Log our bot in
-client.login(process.env.BOT_TOKEN)
+function ScanEvents(dir) {
+	const files = fs.readdirSync('./' + dir).filter(file => file.endsWith('.js'));
+
+	for (const file of files) {
+		const item = require('./' + dir + '/' + file);
+		if (item.once) {
+			client.once(item.name, (...args) => item.execute(...args));
+		}
+		else {
+			client.on(item.name, (...args) => item.execute(...args));
+		}
+	}
+}
