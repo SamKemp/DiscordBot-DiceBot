@@ -20,7 +20,17 @@ ScanFor('menus', client.menues);
 ScanFor('buttons', client.buttons);
 
 // Scan for and register events
-ScanEvents('events');
+const eventFiles = fs.readdirSync('./events').filter(file => file.endsWith('.js'));
+
+for (const file of eventFiles) {
+	const item = require('./events/' + file);
+	if (item.once) {
+		client.once(item.name, (...args) => item.execute(...args));
+	}
+	else {
+		client.on(item.name, (...args) => item.execute(...args));
+	}
+}
 
 // Bot Login
 console.log(' ');
@@ -79,18 +89,4 @@ function ScanCommands(dir, clientSet, devel = true, prod = false) {
 			console.error(error);
 		}
 	})();
-}
-
-function ScanEvents(dir) {
-	const files = fs.readdirSync('./' + dir).filter(file => file.endsWith('.js'));
-
-	for (const file of files) {
-		const item = require('./' + dir + '/' + file);
-		if (item.once) {
-			client.once(item.name, (...args) => item.execute(...args));
-		}
-		else {
-			client.on(item.name, (...args) => item.execute(...args));
-		}
-	}
 }

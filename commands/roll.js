@@ -16,11 +16,11 @@ module.exports = {
 		let notation = interaction.options.getString('notation', true);
 
 		if (notation.toLowerCase() == '$droll') notation = '1d20';
-		else if (notation.toLowerCase() == '$dadv') notation = '2d20kh1';
-		else if (notation.toLowerCase() == '$ddis') notation = '2d20kl1';
-		else if (notation.toLowerCase() == '$croll') notation = '1d100';
-		else if (notation.toLowerCase() == '$cadv') notation = '(2d10kl1)*10 + 1d10';
-		else if (notation.toLowerCase() == '$cdis') notation = '(2d10kh1)*10 + 1d10'';
+		if (notation.toLowerCase() == '$dadv') notation = '2d20kh1';
+		if (notation.toLowerCase() == '$ddis') notation = '2d20kl1';
+		if (notation.toLowerCase() == '$croll') notation = '1d100';
+		if (notation.toLowerCase() == '$cadv') notation = '(2d10kl1)*10 + 1d10';
+		if (notation.toLowerCase() == '$cdis') notation = '(2d10kh1)*10 + 1d10';
 
 		try {
 			await interaction.reply(roller.roll(notation).output);

@@ -1,5 +1,3 @@
-const { MessageEmbed } = require('discord.js');
-
 module.exports = {
 	name: 'interactionCreate',
 	once: false,
@@ -13,8 +11,8 @@ module.exports = {
 			try {
 				await command.execute(interaction);
 			}
-			catch (error) {
-				error(error);
+			catch (err) {
+				error(interaction, err);
 			}
 		}
 		else if (interaction.isSelectMenu())
@@ -26,8 +24,8 @@ module.exports = {
 			try {
 				await menu.execute(interaction);
 			}
-			catch (error) {
-				error(error);				
+			catch (err) {
+				error(interaction, err);
 			}
 		}
 		else if (interaction.isButton())
@@ -39,8 +37,8 @@ module.exports = {
 			try {
 				await button.execute(interaction);
 			}
-			catch (error) {
-				error(error);				
+			catch (err) {
+				error(interaction, err);
 			}
 		}
 		else {
@@ -49,7 +47,7 @@ module.exports = {
 	},
 };
 
-function error(err)
+async function error(interaction, err)
 {
 	console.error(err);
 	try {
